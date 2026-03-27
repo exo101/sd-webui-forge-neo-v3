@@ -26,143 +26,6 @@ Stable Diffusion WebUI Forge 是建立在原始 AUTOMATIC1111 Stable Diffusion W
 
 ---
 
-## 特性
-
-### 支持的模型
-
-- **Anima** - 最新的文本到图像模型
-- **Flux.2-Klein** (4B / 9B) - 高效的小模型
-- **Z-Image / Z-Image-Turbo** - 快速图像生成
-- **Wan 2.2** - 视频生成模型
-  - 使用 Refiner 实现高噪声/低噪声切换
-- **Qwen-Image / Qwen-Image-Edit** - 通义千问图像模型
-- **Flux Kontext** - 支持上下文控制
-- **Nunchaku (SVDQ)** - 量化模型加速
-- **Lumina-Image-2.0** - Neta-Lumina / NetaYume-Lumina
-- **Chroma1-HD** - 高清图像生成
-- **SDXL 高级模型** - 包括 v-prediction、Zero Terminal SNR、Rectified Flow 等
-
-> [!重要提示]
-> 导出视频需要安装 **[FFmpeg](https://ffmpeg.org/)**
-
-### 模型组件说明
-
-不同类型的模型需要不同的组件文件，以下是各类模型的组件结构：
-使用参考链接https://github.com/Haoming02/sd-webui-forge-classic/wiki/Inference-References
-
-#### SD1.5 / SD2.1 模型
-只需一个 checkpoint 文件即可运行：
-```
-models/Stable-diffusion/
-└── your_model.safetensors  # 包含 UNet + VAE + CLIP
-```
-
-#### SDXL 模型
-同样只需一个 checkpoint 文件：
-```
-models/Stable-diffusion/
-└── sdxl_model.safetensors  # 包含 UNet + VAE + 双文本编码器
-```
-
-#### Flux 模型
-Flux 模型采用 DiT 架构，组件分离存储：
-```
-models/diffusion_models/
-└── flux1-dev-fp8.safetensors    # 或 flux-schnell.safetensors
-
-models/text_encoder/         # T5 文本编码器（可选，首次运行自动下载）
-└── t5xxl_fp16.safetensors
-
-models/clip/                 # CLIP 文本编码器（可选）
-└── clip_l.safetensors
-
-models/VAE/                  # Flux 专用 VAE（可选）
-└── flux_vae.safetensors
-```
-
-> [!提示]
-> Flux 模型首次运行时会自动下载缺失的组件到 `models` 目录
-
-#### Flux.2-Klein 模型
-Flux.2-Klein 是 多模态编辑模型
-```
-models/diffusion_models/
-├── flux2-klein-4b.safetensors   # 4B 轻量版
-└── flux2-klein-9b.safetensors   # 9B 标准版
-
-models/text_encoder/              # 文本编码器（首次运行自动下载）
-└── qwen_3_8b_fp8mixed.safetensors
-└── qwen_3_4b.safetensors
-
-models/vae/
-└── flux2-vae.safetensors
-```
-
-> [!提示]
-> Klein 模型体积更小，适合显存较小的显卡，生成速度更快
-
-#### Anima 模型
-Anima 是二次元高质量专用模型：
-```
-models/unet/
-└── anima.safetensors            # Anima 主模型
-
-models/text_encoder/              # 文本编码器
-├── qwen_3_06b_base.safetensors      # 通义千问编码器
-
-models/VAE/
-└── qwen_image_vae.safetensors       # Qwen-Image 专用 VAE
-```
-
-> [!提示]
-> Anima 模型支持调制引导控制，可在设置中开启以改善生成质量
-
-#### Qwen-Image 模型
-```
-models/unet/
-├── qwen_image_2512_fp8_e4m3fn.safetensors  # 主模型
-models/text_encoder/              # 文本编码器
-├── qwen_2.5_vl_7b_fp8_scaled.safetensors   # 通义千问编码器
-models/VAE/
-└── qwen_image_vae.safetensors       # Qwen-Image 专用 VAE
-```
-
-#### Wan 2.2 视频模型
-
-# 文生视频模型```
-models/unet/
-└── wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors  # 文生视频模型
-└── wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors  # 文生视频模型
-models/text_encoder/              # 文本编码器
-umt5-xx-fp8-scaled.safetensors
-umt5-xxl-enc-bf16.safetensors
-models/VAE/
-└── wan_2.2_vae.safetensors      # Wan 2.2 专用 VAE
-
-
-#### ControlNet 模型
-```
-models/ControlNet/
-├── controlnet-union-sdxl-1.0_promax.safetensors  # 
-└── ...
-```
-
-#### ControlNetPreprocessor预处理模型
-```
-models/ontrolNetPreprocessor/
-├── dw-ll_ucoco_384.pth  # 
-└── ...
-
-#### VAE 模型
-```
-models/VAE/
-├── sdxl_vae.safetensors      # SDXL 专用 VAE
-├── vae-ft-mse-840000.safetensors  # SD1.5 优化 VAE
-└── ...
-```
-
-
-
 ## 插件列表
 
 ### 新增插件
@@ -213,6 +76,128 @@ models/VAE/
 - **X/Y/Z 图自动行计数优化**
 
 ---
+## 特性
+
+### 支持的模型
+
+- **Anima** - 最新的文本到图像模型
+- **Flux.2-Klein** (4B / 9B) - 高效的小模型
+- **Z-Image / Z-Image-Turbo** - 快速图像生成
+- **Wan 2.2** - 视频生成模型
+  - 使用 Refiner 实现高噪声/低噪声切换
+- **Qwen-Image / Qwen-Image-Edit** - 通义千问图像模型
+- **Flux Kontext** - 支持上下文控制
+- **Nunchaku (SVDQ)** - 量化模型加速
+- **Lumina-Image-2.0** - Neta-Lumina / NetaYume-Lumina
+- **Chroma1-HD** - 高清图像生成
+- **SDXL 高级模型** - 包括 v-prediction、Zero Terminal SNR、Rectified Flow 等
+
+> [!重要提示]
+> 导出视频需要安装 **[FFmpeg](https://ffmpeg.org/)**
+
+### 模型组件说明
+
+不同类型的模型需要不同的组件文件，以下是各类模型的组件结构：
+使用参考链接https://github.com/Haoming02/sd-webui-forge-classic/wiki/Inference-References
+
+#### SD1.5 / SD2.1 模型
+只需一个 checkpoint 文件即可运行：
+```
+models/Stable-diffusion/
+└── your_model.safetensors  # 包含 UNet + VAE + CLIP
+```
+
+#### SDXL 模型
+同样只需一个 checkpoint 文件：
+```
+models/Stable-diffusion/
+└── sdxl_model.safetensors  # 包含 UNet + VAE + 双文本编码器
+```
+
+#### Flux 模型
+Flux 模型采用 DiT 架构，组件分离存储：
+```
+models/diffusion_models/
+└── flux1-dev-fp8.safetensors    # 或 flux-schnell.safetensors
+
+models/text_encoder/         # T5 文本编码器
+└── t5xxl_fp16.safetensors
+
+models/clip/                 # CLIP 文本编码器（可选）
+└── clip_l.safetensors
+
+models/VAE/                  # Flux 专用 VAE（可选）
+└── flux_vae.safetensors
+```
+
+#### Flux.2-Klein 模型
+Flux.2-Klein 是 多模态编辑模型
+```
+models/diffusion_models/
+├── flux2-klein-4b.safetensors   # 4B 轻量版
+└── flux2-klein-9b.safetensors   # 9B 标准版
+
+models/text_encoder/              # 文本编码器（首次运行自动下载）
+└── qwen_3_8b_fp8mixed.safetensors
+└── qwen_3_4b.safetensors
+
+models/vae/
+└── flux2-vae.safetensors
+```
+
+> [!提示]
+> Klein 模型体积更小，适合显存较小的显卡，生成速度更快
+
+#### Anima 模型
+Anima 是二次元高质量专用模型：
+```
+models/unet/
+└── anima.safetensors            # Anima 主模型
+
+models/text_encoder/              # 文本编码器
+├── qwen_3_06b_base.safetensors      # 通义千问编码器
+
+models/VAE/
+└── qwen_image_vae.safetensors       # Qwen-Image 专用 VAE
+```
+
+#### Qwen-Image 模型
+```
+models/unet/
+├── qwen_image_2512_fp8_e4m3fn.safetensors  # 主模型
+models/text_encoder/              # 文本编码器
+├── qwen_2.5_vl_7b_fp8_scaled.safetensors   # 通义千问编码器
+models/VAE/
+└── qwen_image_vae.safetensors       # Qwen-Image 专用 VAE
+```
+
+#### Wan 2.2 视频模型
+
+# 文生视频模型
+```
+models/unet/
+├── wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors  # 文生视频模型
+├── wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors  # 文生视频模型
+models/text_encoder/   # 文本编码器          
+├── umt5-xx-fp8-scaled.safetensors  # 文本编码器
+├── umt5-xxl-enc-bf16.safetensors    # 文本编码器
+models/VAE/
+└── wan_2.2_vae.safetensors      # Wan 2.2 专用 VAE
+```
+
+#### ControlNet 模型
+```
+models/ControlNet/
+├── controlnet-union-sdxl-1.0_promax.safetensors  # 
+└── ...
+```
+
+#### ControlNetPreprocessor预处理模型
+```
+models/ontrolNetPreprocessor/
+├── dw-ll_ucoco_384.pth  # 
+└── ...
+
 
 ## 模型目录结构
 
