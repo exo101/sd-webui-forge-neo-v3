@@ -1,4 +1,4 @@
-
+# Stable Diffusion WebUI Forge - Neo 
 
 <p align="center">
 <img src="html\ui.webp" width=512 alt="UI">
@@ -6,7 +6,7 @@
 
 ## 项目介绍
 
-本项目是基于 **Stable Diffusion WebUI Forge Neo** 的修改版本，专注于优化和易用性，目标是通过简单易用的 GUI 运行最新的流行模型与适应新老插件。
+本项目是基于 **Stable Diffusion WebUI Forge Neo** 的中文定制版本，专注于优化和易用性，目标是通过简单易用的 GUI 运行最新的流行模型。
 
 **原作者**：[Haoming02](https://github.com/Haoming02)  
 **原项目链接**：[https://github.com/Haoming02/sd-webui-forge-classic/tree/neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo?tab=readme-ov-file#installation)
@@ -54,18 +54,19 @@ Stable Diffusion WebUI Forge 是建立在原始 AUTOMATIC1111 Stable Diffusion W
 | 插件名称 | 功能说明 |
 |---------|---------|
 | **� 美学提升** | 图像美学质量优化 |
-| **�🎬 分镜助手** | 专业的剧本与分镜管理系统，支持多故事、多角色管理，可视化分镜墙编排 |
+| **� 分镜助手** | 专业的剧本与分镜管理系统，支持多故事、多角色管理，可视化分镜墙编排 |
 | **🎥 相机角度选择器** | 3D 可视化多角度提示词选择，支持方位角、高程角、距离调整 |
 | **🎬 多媒体处理** | 多媒体文件处理功能 |
 | **👁️ 图像识别与语言交互** | 基于视觉模型的图像识别与对话功能 |
 | **✂️ 图像分割与清理** | 图像分割、抠图、背景清理功能 |
+| **🏷️ WD 1.4 标签器** | 自动生成图像标签 |
 
 ### 修改的旧插件
 
 | 插件名称 | 修改说明 |
 |---------|---------|
-| **🔧 adetailer | 修脸插件 |
-| **🏷️ WD 1.4 标签器** | 自动生成图像标签 |
+| **🔧 辅助** | 兼容性优化 |
+| **🏷️ WD 1.4 标签器** | 兼容性优化 |
 
 ### 汉化的内置功能
 
@@ -94,6 +95,35 @@ Stable Diffusion WebUI Forge 是建立在原始 AUTOMATIC1111 Stable Diffusion W
 - **GPU 瓦片合成** - 加速上采样
 - **支持更多图像格式** - .avif、.heif、.jxl
 - **X/Y/Z 图自动行计数优化**
+
+---
+
+## 模型目录结构
+
+项目 `models` 目录包含以下子目录：
+
+| 目录名称 | 说明 |
+|---------|------|
+| **Stable-diffusion** | 主模型目录，存放 SD1.5、SDXL、Flux 等大模型 |
+| **Lora** | LoRA 微调模型，用于风格/角色/概念微调 |
+| **VAE** | 变分自编码器，影响图像色彩和细节 |
+| **text_encoder** | 文本编码器模型（T5、CLIP 等） |
+| **clip** | CLIP 视觉-语言模型 |
+| **unet** | UNet 去噪网络模型 |
+| **diffusion_models** | 扩散模型（Flux、SD3 等 DiT 架构） |
+| **embeddings** | 文本反转嵌入向量 |
+| **ControlNet** | ControlNet 控制网络模型 |
+| **ControlNetPreprocessor** | ControlNet 预处理器模型 |
+| **ESRGAN** | ESRGAN 超分辨率放大模型 |
+| **RealESRGAN** | RealESRGAN 超分辨率模型 |
+| **adetailer** | ADetailer 面部修复模型 |
+| **cleaner** | 图像清理模型 |
+| **sams** | SAM (Segment Anything Model) 分割模型 |
+| **qwen-image** | 通义千问图像生成模型 |
+| **qwen3-tts** | 通义千问语音合成模型 |
+| **whisper-tiny** | Whisper 语音识别模型 |
+| **LatentSync** | 潜在同步模型（音视频同步） |
+| **diffusers** | Diffusers 格式模型 |
 
 ---
 
