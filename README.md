@@ -7,6 +7,9 @@
 
 **原作者**：[Haoming02](https://github.com/Haoming02)  
 **原项目链接**：[https://github.com/Haoming02/sd-webui-forge-classic/tree/neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo?tab=readme-ov-file#installation)
+qq群内领取开源整合包
+<img width="1284" height="2283" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/523595fe-33dd-4848-ae85-21a11ec765bc" />
+教程视频：https://www.bilibili.com/video/BV1KfXyBTEXb?vd_source=343e49b703fb5b4137cd6c1987846f37&spm_id_from=333.788.videopod.sections
 
 > [!说明]
 > 本版本为改良版本，部分插件直接安装会发生兼容性错误，为了适应众多新旧插件做了些许修改。
