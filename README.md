@@ -168,7 +168,7 @@ models/VAE/
 #### Qwen-Image 模型
 ```
 models/unet/
-├── qwen_image_2512_fp8_e4m3fn.safetensors  # 主模型
+├── qwen_image_2512_fp8_e4m3fn.safetensors  # 主模型（注意：fp8版本qwen模型消耗显存极高，可选择nunchaku版本的qwen模型，在魔搭社区进行下载）
 models/text_encoder/              # 文本编码器
 ├── qwen_2.5_vl_7b_fp8_scaled.safetensors   # 通义千问编码器
 models/VAE/
