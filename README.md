@@ -110,14 +110,14 @@ Stable Diffusion WebUI Forge 是建立在原始 AUTOMATIC1111 Stable Diffusion W
 #### SD1.5 / SD2.1 模型
 只需一个 checkpoint 文件即可运行：
 ```
-models/Stable-diffusion/
+models/diffusion_models/
 └── your_model.safetensors  # 包含 UNet + VAE + CLIP
 ```
 
 #### SDXL 模型
 同样只需一个 checkpoint 文件：
 ```
-models/Stable-diffusion/
+models/diffusion_models/
 └── sdxl_model.safetensors  # 包含 UNet + VAE + 双文本编码器
 ```
 
@@ -155,7 +155,7 @@ models/vae/
 #### Anima 模型
 Anima 是二次元高质量专用模型：
 ```
-models/unet/
+models/diffusion_models/
 └── anima.safetensors            # Anima 主模型
 
 models/text_encoder/              # 文本编码器
@@ -167,7 +167,7 @@ models/VAE/
 
 #### Qwen-Image 模型
 ```
-models/unet/
+models/diffusion_models/
 ├── qwen_image_2512_fp8_e4m3fn.safetensors  # 主模型（注意：fp8版本qwen模型消耗显存极高，可选择nunchaku版本的qwen模型，在魔搭社区进行下载）
 models/text_encoder/              # 文本编码器
 ├── qwen_2.5_vl_7b_fp8_scaled.safetensors   # 通义千问编码器
@@ -179,7 +179,7 @@ models/VAE/
 
 # 文生视频模型
 ```
-models/unet/
+models/diffusion_models/
 ├── wan2.2_t2v_high_noise_14B_fp8_scaled.safetensors  # 文生视频模型
 ├── wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors  # 文生视频模型
 models/text_encoder/   # 文本编码器          
