@@ -168,7 +168,9 @@ models/VAE/
 #### Qwen-Image 模型
 ```
 models/diffusion_models/
-├── svdq-fp4_r128-qwen-image-edit-2509-lightningv2.0-8steps.safetensors  # 主模型（nunchaku版本的qwen模型，在魔搭社区进行下载要区分50系模型）
+├──（编辑模型） svdq-fp4_r128-qwen-image-edit-2509-lightningv2.0-8steps.safetensors  # 主模型（nunchaku版本的qwen模型，在魔搭社区进行下载要区分50系模型）
+├──（文生图模型）svdq-fp4_r128-qwen-image-lightningv1.1-8steps.safetensors # 主模型（nunchaku版本的qwen模型，在魔搭社区进行下载要区分50系模型）
+
 models/text_encoder/              # 文本编码器
 ├── qwen_2.5_vl_7b_fp8_scaled.safetensors   # 通义千问编码器
 models/VAE/
@@ -253,7 +255,7 @@ models/ontrolNetPreprocessor/
 在 ComfyUI 的 `extra_model_paths.yaml` 中添加：
 ```yaml
 a111:
-    base_path: D:\sd-webui-forge-classic-neo-v2
+    base_path: sd-webui-forge-neo-v2/webui
     checkpoints: models/Stable-diffusion
     loras: models/Lora
     vae: models/VAE
