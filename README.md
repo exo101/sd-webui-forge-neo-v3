@@ -6,7 +6,6 @@
 本项目是基于 **Stable Diffusion WebUI Forge Neo** 的中文改良版本，专注于优化和多模态插件融合，目标是通过简单易用的 GUI 运行最新的流行模型。
 
 **原作者**：[Haoming02](https://github.com/Haoming02)  
-**原项目链接**：[https://github.com/Haoming02/sd-webui-forge-classic/tree/neo](https://github.com/Haoming02/sd-webui-forge-classic/tree/neo?tab=readme-ov-file#installation)
 qq群内领取开源整合包
 <img width="357" height="587" alt="QQ20260329-165103" src="https://github.com/user-attachments/assets/1d75d3f0-c31b-4dd7-828b-b5377cede2e5" />
 
