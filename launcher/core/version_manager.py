@@ -87,39 +87,21 @@ def check_github_update():
     try:
         import requests
         
-        # 尝试多个镜像源以提高成功率
-        mirror_urls = [
-            f"https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1",
-            f"https://ghproxy.com/https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1",
-            f"https://mirror.ghproxy.com/https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1",
-        ]
+        # 直连GitHub API
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1"
         
-        response = None
-        last_error = None
+        print(f"[Update Check] 正在连接GitHub...")
+        response = requests.get(
+            url,
+            headers={"Accept": "application/vnd.github.v3+json"},
+            timeout=30
+        )
         
-        for url in mirror_urls:
-            try:
-                print(f"[Update Check] 尝试连接: {url[:60]}...")
-                response = requests.get(
-                    url,
-                    headers={"Accept": "application/vnd.github.v3+json"},
-                    timeout=15
-                )
-                
-                if response.status_code == 200:
-                    print(f"[Update Check] 连接成功")
-                    break
-                else:
-                    last_error = f"HTTP {response.status_code}"
-                    print(f"[Update Check] 连接失败: {last_error}")
-            except Exception as e:
-                last_error = str(e)
-                print(f"[Update Check] 连接异常: {e}")
-                continue
-        
-        if response is None or response.status_code != 200:
-            print(f"[Update Check] 所有镜像源均失败，最后错误: {last_error}")
+        if response.status_code != 200:
+            print(f"[Update Check] 连接失败: HTTP {response.status_code}")
             return None
+        
+        print(f"[Update Check] ✅ 连接成功")
         
         commits = response.json()
         if not commits:
@@ -201,60 +183,22 @@ def update_from_github(progress_callback=None):
             return False, "当前目录不是Git仓库，请先初始化Git或使用ZIP包更新"
         
         log("获取远程更新...")
-        # 获取远程更新，尝试配置GitHub镜像以提高成功率
-        git_config_commands = [
-            ['git', 'config', '--local', 'url.https://ghproxy.com/https://github.com/.insteadOf', 'https://github.com/'],
+        # 直连GitHub获取更新
+        result = subprocess.run(
             ['git', 'fetch', 'origin'],
-        ]
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=120  # 2分钟超时
+        )
         
-        fetch_success = False
-        for cmd in git_config_commands:
-            result = subprocess.run(
-                cmd,
-                cwd=str(project_root),
-                capture_output=True,
-                text=True,
-                timeout=60 if 'fetch' in cmd else 10
-            )
-            
-            if 'fetch' in cmd:
-                if result.returncode == 0:
-                    fetch_success = True
-                    log("Git fetch成功")
-                    break
-                else:
-                    error_msg = result.stderr if result.stderr else "未知错误"
-                    log(f"Git fetch失败: {error_msg}")
-                    log("尝试重置Git配置并重试...")
-                    # 重置配置
-                    subprocess.run(
-                        ['git', 'config', '--local', '--unset', 'url.https://ghproxy.com/https://github.com/.insteadOf'],
-                        cwd=str(project_root),
-                        capture_output=True,
-                        timeout=10
-                    )
-                    # 直接fetch
-                    result = subprocess.run(
-                        ['git', 'fetch', 'origin'],
-                        cwd=str(project_root),
-                        capture_output=True,
-                        text=True,
-                        timeout=60
-                    )
-                    if result.returncode == 0:
-                        fetch_success = True
-                        log("Git fetch成功（直连模式）")
-                        break
-                    else:
-                        error_msg = result.stderr if result.stderr else "未知错误"
-                        log(f"Git fetch最终失败: {error_msg}")
-                        return False, f"获取远程更新失败，请检查网络连接\n错误详情: {error_msg}"
-            else:
-                # 配置命令，忽略错误
-                pass
+        if result.returncode != 0:
+            error_msg = result.stderr.strip()[-300:] if result.stderr else "未知错误"
+            log(f"❌ Git fetch失败")
+            log(f"错误详情: {error_msg[:200]}")
+            return False, f"无法连接到GitHub，请检查网络连接\n\n错误: {error_msg[:200]}"
         
-        if not fetch_success:
-            return False, "无法连接到GitHub，请检查网络连接"
+        log("✅ Git fetch成功")
         
         log("检查是否有可用更新...")
         # 比较本地和远程HEAD
