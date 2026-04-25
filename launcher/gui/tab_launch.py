@@ -394,7 +394,14 @@ class LaunchTab(QWidget):
                 lbl_value = QLabel(value)
                 lbl_value.setStyleSheet(f"color:{COLORS['accent']};font-size:11px;")
                 lbl_value.setCursor(Qt.CursorShape.PointingHandCursor)
-                lbl_value.mousePressEvent = lambda e, u=url: QDesktopServices.openUrl(QUrl(u))
+                
+                # 创建自定义点击事件处理
+                def make_click_handler(link_url):
+                    def handler(event):
+                        QDesktopServices.openUrl(QUrl(link_url))
+                    return handler
+                
+                lbl_value.mousePressEvent = make_click_handler(url)
                 row.addWidget(lbl_value, 1)
             else:
                 lbl_value = QLabel(value)
@@ -654,7 +661,19 @@ class LaunchTab(QWidget):
         self.btn_check_launcher_update.setText("🔄 检查启动器更新")
         
         if not result:
-            QMessageBox.warning(self, "检查失败", "无法连接到GitHub，请检查网络连接")
+            QMessageBox.warning(
+                self, 
+                "检查失败", 
+                "无法连接到GitHub，请检查网络连接\n\n"
+                "可能的原因：\n"
+                "• 网络连接不稳定\n"
+                "• 防火墙或代理阻止了连接\n"
+                "• GitHub服务暂时不可用\n\n"
+                "建议：\n"
+                "• 稍后重试\n"
+                "• 检查网络设置\n"
+                "• 如持续失败可手动从GitHub下载更新"
+            )
             return
         
         if not result.get('has_update'):
