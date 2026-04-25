@@ -1,332 +1,359 @@
-"""插件管理核心逻辑"""
+import json
 import os
 import subprocess
-from dataclasses import dataclass, field
-from PyQt6.QtCore import QThread, pyqtSignal
-from .paths import BASE_DIR, EXT_DIR, GIT_EXE
+import sys
+from pathlib import Path
+from datetime import datetime
 
 
-@dataclass
-class ExtInfo:
-    name: str
-    path: str
-    remote_url: str  = ""
-    branch: str      = ""
-    commit_hash: str = ""
-    commit_date: str = ""
-    remote_hash: str = ""   # 远程最新 commit
-    has_update: bool = False
-    enabled: bool    = True
-    error: str       = ""
+BASE_DIR = Path(__file__).resolve().parents[2]  # launcher/../../ (to project root launcher)
+VERSIONS_FILE = Path(BASE_DIR / 'launcher' / 'versions.json')
+CURRENT_VERSION_FILE = Path(BASE_DIR / 'launcher' / 'CURRENT_VERSION.txt')
+
+# GitHub仓库配置
+GITHUB_REPO = "exo101/sd-webui-forge-neo-v3"
+GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}"
 
 
-def _git(args: list[str], cwd: str, timeout=30, proxy: str = "") -> tuple[int, str]:
-    env = os.environ.copy()
-    env["GIT_TERMINAL_PROMPT"] = "0"
+def load_versions():
+    """Load versions manifest from local versions.json.
+    Returns a dict with keys: current_version (str) and versions (list of dict).
+    If file not exists, create a minimal default structure.
+    """
+    if not VERSIONS_FILE.exists():
+        # provide a minimal default structure
+        default = {
+            "current_version": "v1.0.0",
+            "versions": [
+                {"id": "f9b0ea1", "date": "2026-04-09 15:51:41", "message": "update VAE-Utils, fix qwen CN strength"},
+                {"id": "ae4bbd2", "date": "2026-04-09 09:03:49", "message": "change qwen2512 presets sampler"},
+            ],
+        }
+        # ensure directory exists
+        VERSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(VERSIONS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(default, f, ensure_ascii=False, indent=2)
+        return default
 
-    # 通过 git -c 直接注入代理配置，比环境变量更可靠
-    proxy_args = []
-    if proxy:
-        env["http_proxy"]  = proxy
-        env["https_proxy"] = proxy
-        env["HTTP_PROXY"]  = proxy
-        env["HTTPS_PROXY"] = proxy
-        proxy_args = [
-            "-c", f"http.proxy={proxy}",
-            "-c", f"https.proxy={proxy}",
-        ]
-
-    # 直接使用系统的 Git 命令
-    cmd = ["git"] + proxy_args + args
     try:
-        r = subprocess.run(
-            cmd,
-            capture_output=True, text=True,
-            encoding="utf-8", errors="replace",
-            timeout=timeout, cwd=cwd, env=env,
-            creationflags=subprocess.CREATE_NO_WINDOW
+        with open(VERSIONS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            # ensure keys exist
+            if 'current_version' not in data:
+                data['current_version'] = 'v1.0.0'
+            if 'versions' not in data or not isinstance(data['versions'], list):
+                data['versions'] = []
+            return data
+    except Exception:
+        # fallback to a minimal default in case of parse errors
+        return {
+            "current_version": "v1.0.0",
+            "versions": [],
+        }
+
+
+def get_current_version():
+    data = load_versions()
+    return data.get('current_version', 'v1.0.0')
+
+
+def set_current_version(version_id: str):
+    data = load_versions()
+    data['current_version'] = version_id
+    VERSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(VERSIONS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    # also persist separately for quick reference
+    CURRENT_VERSION_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(CURRENT_VERSION_FILE, 'w', encoding='utf-8') as f:
+        f.write(version_id)
+
+
+def check_github_update():
+    """
+    检查GitHub上的最新版本
+    
+    Returns:
+        dict: 包含更新信息的字典，如果没有更新则返回None
+        {
+            'has_update': bool,
+            'latest_version': str,
+            'current_version': str,
+            'commit_message': str,
+            'commit_date': str,
+            'download_url': str
+        }
+    """
+    try:
+        import requests
+        import urllib3
+        
+        # 禁用SSL警告
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # 直连GitHub API（禁用SSL验证以解决证书问题）
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1"
+        
+        print(f"[Update Check] 正在连接GitHub...")
+        response = requests.get(
+            url,
+            headers={"Accept": "application/vnd.github.v3+json"},
+            timeout=30,
+            verify=False  # 禁用SSL验证
         )
-        return r.returncode, (r.stdout + r.stderr).strip()
-    except subprocess.TimeoutExpired:
-        return -1, f"超时（>{timeout}s），请检查网络或代理是否可用"
-    except Exception as e:
-        # 如果系统 Git 失败，返回错误信息
-        return -1, f"Git 命令执行失败: {str(e)}"
-
-
-# 将 GitHub URL 转为镜像地址
-def _mirror_url(url: str, mirror: str) -> str:
-    if not mirror:
-        return url
-    # ghproxy 系列：完整 URL 拼在镜像域名后面
-    # 例如 https://ghproxy.com/https://github.com/xxx/yyy
-    ghproxy_mirrors = {"ghproxy.com", "mirror.ghproxy.com", "gh.llkk.cc", "ghfast.top"}
-    if mirror in ghproxy_mirrors:
-        if url.startswith("https://github.com"):
-            return f"https://{mirror}/{url}"
-        return url
-    # 其他镜像：直接替换域名
-    return url.replace("https://github.com", f"https://{mirror}")
-
-
-def scan_extensions() -> list[ExtInfo]:
-    """扫描 extensions 目录，返回插件列表"""
-    result = []
-    if not os.path.isdir(EXT_DIR):
-        return result
-
-    try:
-        # 获取目录列表
-        dirs = []
+        
+        if response.status_code != 200:
+            print(f"[Update Check] 连接失败: HTTP {response.status_code}")
+            return None
+        
+        print(f"[Update Check] ✅ 连接成功")
+        
+        commits = response.json()
+        if not commits:
+            return None
+        
+        latest_commit = commits[0]
+        latest_sha = latest_commit['sha'][:7]  # 取前7位作为版本号
+        current_version = get_current_version()
+        
+        # 如果版本相同，无需更新
+        if latest_sha == current_version:
+            return {
+                'has_update': False,
+                'current_version': current_version,
+                'latest_version': latest_sha
+            }
+        
+        # 有可用更新
+        commit_date = latest_commit['commit']['author']['date']
+        # 转换为本地时间格式
         try:
-            dirs = os.listdir(EXT_DIR)
-        except Exception as e:
-            return result
-
-        # 遍历目录列表
-        for name in sorted(dirs):
-            try:
-                ext_path = os.path.join(EXT_DIR, name)
-                # 检查是否是目录
-                if not os.path.isdir(ext_path):
-                    continue
-                
-                # 创建插件信息对象
-                info = ExtInfo(name=name, path=ext_path)
-                
-                # 检查是否有 .git 目录
-                git_dir = os.path.join(ext_path, ".git")
-                if not os.path.exists(git_dir):
-                    info.error = "非 git 仓库"
-                    result.append(info)
-                    continue
-
-                # 尝试获取 Git 信息
-                try:
-                    # 远程地址
-                    _, url = _git(["remote", "get-url", "origin"], ext_path)
-                    info.remote_url = url if url and not url.startswith("fatal") else ""
-
-                    # 当前分支
-                    _, branch = _git(["rev-parse", "--abbrev-ref", "HEAD"], ext_path)
-                    info.branch = branch if branch else "HEAD"
-
-                    # 本地最新 commit
-                    _, log = _git(["log", "-1", "--format=%h|%ci"], ext_path)
-                    if "|" in log:
-                        parts = log.split("|", 1)
-                        info.commit_hash = parts[0].strip()
-                        info.commit_date = parts[1].strip()[:16]  # 只取到分钟
-                    else:
-                        info.commit_hash = log[:7] if log else "?"
-                except Exception as e:
-                    info.error = f"Git 操作失败: {str(e)}"
-
-                result.append(info)
-            except Exception as e:
-                # 跳过有问题的目录
-                continue
+            dt = datetime.fromisoformat(commit_date.replace('Z', '+00:00'))
+            date_str = dt.strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            date_str = commit_date
+        
+        return {
+            'has_update': True,
+            'current_version': current_version,
+            'latest_version': latest_sha,
+            'commit_message': latest_commit['commit']['message'],
+            'commit_date': date_str,
+            'download_url': f"https://github.com/{GITHUB_REPO}/archive/{latest_sha}.zip"
+        }
+        
+    except ImportError:
+        print("[Update Check] 缺少requests库，无法检查更新")
+        return None
     except Exception as e:
-        # 如果整个扫描过程失败，返回空列表
-        pass
-
-    return result
+        print(f"[Update Check] 检查更新时出错: {e}")
+        return None
 
 
-def check_update(info: ExtInfo, proxy: str = "", mirror: str = "") -> ExtInfo:
-    """检测单个插件是否有更新（需要网络）"""
-    if not info.remote_url or info.error:
-        return info
-
-    # 如果配置了镜像，临时设置 remote url
-    actual_url = _mirror_url(info.remote_url, mirror)
-    if actual_url != info.remote_url:
-        _git(["remote", "set-url", "origin", actual_url], info.path)
-
-    code, out = _git(["fetch", "origin", "--quiet"], info.path, timeout=25, proxy=proxy)
-
-    # 还原 remote url
-    if actual_url != info.remote_url:
-        _git(["remote", "set-url", "origin", info.remote_url], info.path)
-
-    if code != 0:
-        info.error = "fetch 失败"
-        return info
-
-    _, remote_hash = _git(["rev-parse", f"origin/{info.branch}"], info.path)
-    info.remote_hash = remote_hash[:7] if remote_hash else "?"
-    info.has_update = (
-        bool(remote_hash) and
-        remote_hash[:7] != info.commit_hash[:7]
-    )
-    return info
-
-
-def update_extension(info: ExtInfo, proxy: str = "", mirror: str = "") -> tuple[bool, str]:
-    """拉取更新，自动处理本地未提交修改和 rebase 冲突"""
-    actual_url = _mirror_url(info.remote_url, mirror)
-    if actual_url != info.remote_url:
-        _git(["remote", "set-url", "origin", actual_url], info.path)
-
-    # 检查是否有未提交修改，有则先 stash
-    _, status = _git(["status", "--porcelain"], info.path)
-    has_changes = bool(status.strip())
-    stash_ok = False
-    if has_changes:
-        stash_code, stash_out = _git(["stash"], info.path)
-        stash_ok = stash_code == 0
-        if not stash_ok:
-            out_prefix = f"[警告] stash 失败，继续尝试更新: {stash_out}\n"
-        else:
-            out_prefix = ""
-
-    # 先尝试 rebase
-    code, out = _git(["pull", "origin", info.branch, "--rebase"],
-                     info.path, timeout=120, proxy=proxy)
-
-    force_reset = False
-    if code != 0:
-        # rebase 失败时中止 rebase，改用 merge
-        _git(["rebase", "--abort"], info.path)
-        code, out2 = _git(["pull", "origin", info.branch, "--no-rebase"],
-                          info.path, timeout=120, proxy=proxy)
-        if code != 0:
-            # merge 也失败，强制 reset 到远程版本
-            _git(["fetch", "origin", info.branch], info.path, timeout=60, proxy=proxy)
-            code, out3 = _git(["reset", "--hard", f"origin/{info.branch}"], info.path)
-            out = out + "\n[已强制同步到远程版本]\n" + out3
-            force_reset = True
-        else:
-            out = out2
-
-    if has_changes:
-        out = out_prefix + out
-
-    # 还原 stash（仅在 stash 成功且未执行 reset --hard 时）
-    if has_changes and stash_ok and not force_reset:
-        pop_code, pop_out = _git(["stash", "pop"], info.path)
-        if pop_code != 0:
-            out += f"\n[警告] stash pop 失败，本地修改可能需要手动恢复: {pop_out}"
-
-    if actual_url != info.remote_url:
-        _git(["remote", "set-url", "origin", info.remote_url], info.path)
-
-    return code == 0, out
-
-
-def install_extension(url: str, proxy: str = "", mirror: str = "") -> tuple[bool, str]:
-    """从 GitHub URL 安装新插件"""
-    name = url.rstrip("/").split("/")[-1]
-    if name.endswith(".git"):
-        name = name[:-4]
-    dest = os.path.join(EXT_DIR, name)
-    if os.path.exists(dest):
-        return False, f"插件目录已存在: {dest}"
-    clone_url = _mirror_url(url, mirror)
-    code, out = _git(["clone", clone_url, dest], EXT_DIR, timeout=180, proxy=proxy)
-    return code == 0, out
-
-
-def uninstall_extension(info: ExtInfo) -> tuple[bool, str]:
-    """删除插件目录"""
-    import shutil
-    import subprocess
+def update_from_github(progress_callback=None):
+    """
+    从GitHub更新启动器
+    
+    Args:
+        progress_callback: 进度回调函数 callback(message: str)
+    
+    Returns:
+        tuple: (success: bool, message: str)
+    """
     try:
-        # 先尝试使用 shutil.rmtree 删除
-        shutil.rmtree(info.path)
-        return True, "已删除"
+        import subprocess
+        import shutil
+        
+        launcher_dir = Path(__file__).resolve().parents[1]  # launcher目录
+        project_root = launcher_dir.parent  # 项目根目录 (sd-webui-forge-neo-v3)
+        
+        # 重要：Git仓库在webui目录下，不是项目根目录
+        webui_dir = project_root / 'webui'
+        git_repo_path = str(webui_dir) if (webui_dir / '.git').exists() else str(project_root)
+        
+        def log(msg):
+            print(f"[Update] {msg}")
+            if progress_callback:
+                progress_callback(msg)
+        
+        log("开始检查Git状态...")
+        
+        # 检查是否在Git仓库中
+        result = subprocess.run(
+            ['git', 'rev-parse', '--git-dir'],
+            cwd=git_repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0:
+            log("错误: 当前目录不是Git仓库")
+            return False, "当前目录不是Git仓库，请先初始化Git或使用ZIP包更新"
+        
+        log("获取远程更新...")
+        # 直连GitHub获取更新
+        result = subprocess.run(
+            ['git', 'fetch', 'origin'],
+            cwd=git_repo_path,
+            capture_output=True,
+            text=True,
+            timeout=120  # 2分钟超时
+        )
+        
+        if result.returncode != 0:
+            error_msg = result.stderr.strip()[-300:] if result.stderr else "未知错误"
+            log(f"❌ Git fetch失败")
+            log(f"错误详情: {error_msg[:200]}")
+            return False, f"无法连接到GitHub，请检查网络连接\n\n错误: {error_msg[:200]}"
+        
+        log("✅ Git fetch成功")
+        
+        log("检查是否有可用更新...")
+        # 比较本地和远程HEAD
+        result = subprocess.run(
+            ['git', 'rev-list', 'HEAD..origin/main', '--count'],
+            cwd=git_repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0:
+            # 尝试master分支
+            result = subprocess.run(
+                ['git', 'rev-list', 'HEAD..origin/master', '--count'],
+                cwd=git_repo_path,
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+        
+        if result.returncode != 0:
+            log("无法确定更新状态")
+            return False, "无法确定更新状态"
+        
+        commit_count = int(result.stdout.strip())
+        
+        if commit_count == 0:
+            log("已是最新版本")
+            return True, "已是最新版本"
+        
+        log(f"发现 {commit_count} 个新提交，开始更新...")
+        
+        # 备份当前versions.json
+        if VERSIONS_FILE.exists():
+            backup_file = VERSIONS_FILE.with_suffix('.json.bak')
+            shutil.copy2(VERSIONS_FILE, backup_file)
+            log("已备份版本信息")
+        
+        # 拉取最新代码
+        log("正在拉取最新代码...")
+        result = subprocess.run(
+            ['git', 'pull', 'origin', 'main'],  # 或 'master'
+            cwd=git_repo_path,
+            capture_output=True,
+            text=True,
+            timeout=120
+        )
+        
+        if result.returncode != 0:
+            # 尝试master分支
+            result = subprocess.run(
+                ['git', 'pull', 'origin', 'master'],
+                cwd=git_repo_path,
+                capture_output=True,
+                text=True,
+                timeout=120
+            )
+        
+        if result.returncode != 0:
+            error_msg = result.stderr if result.stderr else "未知错误"
+            log(f"Git pull失败: {error_msg}")
+            
+            # 恢复备份
+            backup_file = VERSIONS_FILE.with_suffix('.json.bak')
+            if backup_file.exists():
+                shutil.copy2(backup_file, VERSIONS_FILE)
+            
+            return False, f"更新失败: {error_msg}"
+        
+        log("更新成功！")
+        
+        # 获取新的版本信息
+        new_version = get_current_version()
+        log(f"当前版本: {new_version}")
+        
+        # 清理备份文件
+        backup_file = VERSIONS_FILE.with_suffix('.json.bak')
+        if backup_file.exists():
+            backup_file.unlink()
+        
+        return True, f"更新成功！当前版本: {new_version}"
+        
+    except subprocess.TimeoutExpired:
+        log("更新超时，请检查网络连接")
+        return False, "更新超时，请检查网络连接"
     except Exception as e:
-        # 如果遇到权限错误，尝试使用 Windows 系统命令删除
-        if os.name == 'nt':  # 只在 Windows 系统上执行
-            try:
-                # 使用 rmdir /s /q 命令强制删除目录
-                cmd = ['cmd.exe', '/c', 'rmdir', '/s', '/q', info.path]
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    creationflags=subprocess.CREATE_NO_WINDOW
-                )
-                if result.returncode == 0:
-                    return True, "已删除"
-                else:
-                    return False, f"系统命令删除失败: {result.stderr}"
-            except Exception as e2:
-                return False, f"两次删除都失败: {str(e)} | {str(e2)}"
-        return False, str(e)
+        log(f"更新过程中出错: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, f"更新失败: {str(e)}"
 
 
-def switch_branch(info: ExtInfo, branch: str) -> tuple[bool, str]:
-    code, out = _git(["checkout", branch], info.path, timeout=30)
-    return code == 0, out
-
-
-# ── 异步 Worker ────────────────────────────────────────────────
-
-class ScanWorker(QThread):
-    done = pyqtSignal(list)
-
-    def run(self):
-        self.done.emit(scan_extensions())
-
-
-class CheckUpdateWorker(QThread):
-    progress = pyqtSignal(int, object)
-    done     = pyqtSignal()
-
-    def __init__(self, extensions: list, proxy: str = "", mirror: str = ""):
-        super().__init__()
-        self.extensions = extensions
-        self.proxy  = proxy
-        self.mirror = mirror
-
-    def run(self):
-        for i, ext in enumerate(self.extensions):
-            updated = check_update(ext, self.proxy, self.mirror)
-            self.progress.emit(i, updated)
-        self.done.emit()
-
-
-class UpdateWorker(QThread):
-    log  = pyqtSignal(str)
-    done = pyqtSignal(int, int)
-
-    def __init__(self, extensions: list, proxy: str = "", mirror: str = ""):
-        super().__init__()
-        self.extensions = extensions
-        self.proxy  = proxy
-        self.mirror = mirror
-
-    def run(self):
-        ok = fail = 0
-        for ext in self.extensions:
-            self.log.emit(f"更新 {ext.name} ...")
-            success, msg = update_extension(ext, self.proxy, self.mirror)
-            if success:
-                ok += 1
-                self.log.emit(f"  ✅ {ext.name} 更新成功")
-            else:
-                fail += 1
-                # 完整输出错误，不截断
-                self.log.emit(f"  ❌ {ext.name} 失败:")
-                for line in msg.splitlines():
-                    if line.strip():
-                        self.log.emit(f"     {line}")
-        self.done.emit(ok, fail)
-
-
-class InstallWorker(QThread):
-    log  = pyqtSignal(str)
-    done = pyqtSignal(bool, str)
-
-    def __init__(self, url: str, proxy: str = "", mirror: str = ""):
-        super().__init__()
-        self.url    = url
-        self.proxy  = proxy
-        self.mirror = mirror
-
-    def run(self):
-        self.log.emit(f"正在克隆: {self.url}")
-        ok, msg = install_extension(self.url, self.proxy, self.mirror)
-        self.log.emit(msg)
-        self.done.emit(ok, msg)
+def refresh_local_versions():
+    """
+    刷新本地版本列表（从Git历史中读取）
+    
+    Returns:
+        list: 版本列表
+    """
+    try:
+        import subprocess
+        
+        launcher_dir = Path(__file__).resolve().parents[1]  # launcher目录
+        project_root = launcher_dir.parent  # 项目根目录 (sd-webui-forge-neo-v3)
+        
+        # 重要：Git仓库在webui目录下
+        webui_dir = project_root / 'webui'
+        git_repo_path = str(webui_dir) if (webui_dir / '.git').exists() else str(project_root)
+        
+        # 获取最近的10个commit
+        result = subprocess.run(
+            ['git', 'log', '--pretty=format:%h|%ad|%s', '--date=short', '-n', '10'],
+            cwd=git_repo_path,
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        
+        if result.returncode != 0:
+            print("[Version Refresh] Git命令执行失败")
+            return []
+        
+        versions = []
+        for line in result.stdout.strip().split('\n'):
+            if '|' in line:
+                parts = line.split('|', 2)
+                if len(parts) == 3:
+                    versions.append({
+                        'id': parts[0],
+                        'date': parts[1],
+                        'message': parts[2]
+                    })
+        
+        # 更新versions.json
+        if versions:
+            data = load_versions()
+            data['versions'] = versions
+            data['current_version'] = get_current_version()
+            
+            VERSIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
+            with open(VERSIONS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        
+        return versions
+        
+    except Exception as e:
+        print(f"[Version Refresh] 刷新版本列表失败: {e}")
+        return []
