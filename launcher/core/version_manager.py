@@ -86,15 +86,20 @@ def check_github_update():
     """
     try:
         import requests
+        import urllib3
         
-        # 直连GitHub API
+        # 禁用SSL警告
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # 直连GitHub API（禁用SSL验证以解决证书问题）
         url = f"https://api.github.com/repos/{GITHUB_REPO}/commits?per_page=1"
         
         print(f"[Update Check] 正在连接GitHub...")
         response = requests.get(
             url,
             headers={"Accept": "application/vnd.github.v3+json"},
-            timeout=30
+            timeout=30,
+            verify=False  # 禁用SSL验证
         )
         
         if response.status_code != 200:
