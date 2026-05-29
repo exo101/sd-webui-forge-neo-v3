@@ -3,7 +3,7 @@
 
 本项目是基于 Stable Diffusion WebUI Forge Neo v3的中文改良版本，专注于优化和多模态插件融合，目标是通过简单易用的 GUI 运行最新的流行模型。
 
----![Uploading qq群ai交流群.jpg…]()
+---
 
 本目录是 SD WebUI Forge Neo 的核心工作目录。
 
@@ -214,7 +214,8 @@ set COMMANDLINE_ARGS=--xformers --enable-insecure-extension-access --skip-python
 - [主项目README](../README.md) - 项目完整说明
 - [视频教程](https://www.bilibili.com/video/BV1KfXyBTEXb)
 - [分镜助手教程](https://www.bilibili.com/video/BV1foQzBMErp/)
-- [QQ交流群](../launcher/qq群ai交流群.jpg)
+- [QQ交流群]<img width="1284" height="1547" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/88be640b-67bb-488a-a256-c4803834a627" />
+
 
 ---
 
