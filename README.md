@@ -1,8 +1,9 @@
+
 # Stable Diffusion WebUI Forge - Neo v3 中文改良版
 
 本项目是基于 Stable Diffusion WebUI Forge Neo v3的中文改良版本，专注于优化和多模态插件融合，目标是通过简单易用的 GUI 运行最新的流行模型。
 
----
+---![Uploading qq群ai交流群.jpg…]()
 
 本目录是 SD WebUI Forge Neo 的核心工作目录。
 
