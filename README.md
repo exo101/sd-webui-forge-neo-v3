@@ -54,12 +54,6 @@ webui/
 | **ERNIE-Image** | 文心一格图像模型 | 12GB+ |
 | **Neta-Lumina** | Neta-Lumina图像模型 | 12GB+ |
 
-### 视频生成模型
-
-| 模型架构 | 说明 | 显存要求 |
-|---------|------|---------|
-| **Wan 2.2** | Wan 2.2 视频生成模型 (T2V/I2V) | 16GB+ |
-| **Z-Image-Turbo** | 智谱Image Turbo视频模型 | 16GB+ |
 
 ### 模型组件说明
 
