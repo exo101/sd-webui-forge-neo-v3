@@ -170,38 +170,7 @@ webui/
 
 ---
 
-## ⚙️ 常用设置
 
-### 启动参数配置
-
-编辑 `webui-user.bat` 文件：
-
-```batch
-set COMMANDLINE_ARGS=--xformers --enable-insecure-extension-access --skip-python-version-check
-```
-
-### 常用参数
-
-| 参数 | 说明 |
-|-----|------|
-| `--xformers` | 启用xFormers注意力优化 |
-| `--medvram` | 中等显存优化 |
-| `--lowvram` | 低显存优化 |
-| `--enable-insecure-extension-access` | 允许扩展访问 |
-| `--api` | 启用API服务 |
-| `--listen` | 允许远程访问 |
-| `--skip-python-version-check` | 跳过Python版本检查 |
-
-### 显存优化建议
-
-| 显存 | 推荐配置 |
-|-----|---------|
-| 4-6GB | 启用 `--medvram` |
-| 8GB | 使用 `--xformers` |
-| 12GB+ | 默认配置即可 |
-| 16GB+ | 可启用所有优化 |
-
----
 
 ## 📚 相关资源
 
