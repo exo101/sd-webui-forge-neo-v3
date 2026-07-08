@@ -190,7 +190,7 @@ webui/
 ## 📚 相关资源
 
 - [主项目README](../README.md) - 项目完整说明
-- [视频教程](https://www.bilibili.com/video/BV1KfXyBTEXb)
+- [视频教程][(https://www.bilibili.com/video/BV1KfXyBTEXb)](https://www.bilibili.com/video/BV191DCBMEPu?spm_id_from=333.788.videopod.sections&vd_source=343e49b703fb5b4137cd6c1987846f37)
 - [QQ交流群]<img width="1284" height="1547" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/88be640b-67bb-488a-a256-c4803834a627" />
 
 
