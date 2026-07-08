@@ -2,6 +2,7 @@
 # Stable Diffusion WebUI Forge - Neo v3 中文改良版
 
 本项目是基于 Stable Diffusion WebUI Forge Neo v3的中文改良版本，在Haoming02作者原基础上制作了简单易用的启动器，多模态插件融合，如图层分离，打光编辑，语音tts，音乐生成，wan系列api，llama.cpp视觉与语音模型，开源社区模型下载器，图生3d等多模态功能融合的版本
+[视频教程][(https://www.bilibili.com/video/BV1KfXyBTEXb)](https://www.bilibili.com/video/BV191DCBMEPu?spm_id_from=333.788.videopod.sections&vd_source=343e49b703fb5b4137cd6c1987846f37)
 
 ---
 
@@ -190,7 +191,6 @@ webui/
 ## 📚 相关资源
 
 - [主项目README](../README.md) - 项目完整说明
-- [视频教程][(https://www.bilibili.com/video/BV1KfXyBTEXb)](https://www.bilibili.com/video/BV191DCBMEPu?spm_id_from=333.788.videopod.sections&vd_source=343e49b703fb5b4137cd6c1987846f37)
 - [QQ交流群]<img width="1284" height="1547" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/88be640b-67bb-488a-a256-c4803834a627" />
 
 
