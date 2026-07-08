@@ -1,13 +1,28 @@
 
 # Stable Diffusion WebUI Forge - Neo v3 中文改良版
 
-本项目是基于 Stable Diffusion WebUI Forge Neo v3的中文改良版本，专注于优化和多模态插件融合，目标是通过简单易用的 GUI 运行最新的流行模型。
+本项目是基于 Stable Diffusion WebUI Forge Neo v3的中文改良版本，在Haoming02作者原基础上制作了简单易用的启动器，多模态插件融合，如图层分离，打光编辑，语音tts，音乐生成，wan系列api，llama.cpp视觉与语音模型，开源社区模型下载器，图生3d等多模态功能融合的版本
 
 ---
 
 本目录是 SD WebUI Forge Neo 的核心工作目录。
 
 ---
+主页注意事项
+<img width="1053" height="762" alt="QQ20260708-232327" src="https://github.com/user-attachments/assets/10e9220a-13a4-4082-8ed2-894168f0555b" />
+辅助参数设置
+<img width="1067" height="768" alt="QQ20260708-232339" src="https://github.com/user-attachments/assets/0099e787-fab8-4bb0-99ed-9494f5ecb39f" />
+comfyui共享路径设置
+<img width="1057" height="744" alt="QQ20260708-232353" src="https://github.com/user-attachments/assets/1a7b226d-6335-4af5-8aa8-c5d2c70161b3" />
+命令行工具
+<img width="1058" height="773" alt="QQ20260708-232411" src="https://github.com/user-attachments/assets/c6181115-7513-4f1b-b66f-d49db202a62e" />
+模型指南
+<img width="1036" height="757" alt="QQ20260708-232431" src="https://github.com/user-attachments/assets/2f9f8474-9d72-4d0b-a961-20e185fec770" />
+常用命令辅助
+<img width="1070" height="770" alt="QQ20260708-232447" src="https://github.com/user-attachments/assets/e74e29fc-acd3-4b9f-b659-386666763b14" />
+
+
+
 
 ## 📁 目录结构
 
