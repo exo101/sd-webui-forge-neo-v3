@@ -191,7 +191,8 @@ webui/
 ## 📚 相关资源
 
 - [主项目README](../README.md) - 项目完整说明
-- [QQ交流群]<img width="1284" height="1547" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/88be640b-67bb-488a-a256-c4803834a627" />
+- <img width="1284" height="1555" alt="qq群ai交流群" src="https://github.com/user-attachments/assets/1cdd4bf8-533d-46c6-99b3-68a9f50139e7" />
+
 
 
 ---
